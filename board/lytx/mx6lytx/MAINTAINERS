@@ -1,0 +1,6 @@
+MX6SABRESD BOARD
+M:	Brett Phagan <b.phagan@nxp.com>
+S:	Maintained
+F:	board/freescale/mx6lytx/
+F:	include/configs/mx6lytx.h
+F:	configs/mx6lytx_defconfig

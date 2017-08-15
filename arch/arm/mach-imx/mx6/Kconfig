@@ -218,6 +218,14 @@ config TARGET_MX6SABRESD
 	select DM_THERMAL
 	select BOARD_EARLY_INIT_F
 
+config TARGET_MX6LYTX
+	bool "mx6lytx"
+	select BOARD_LATE_INIT
+	select SUPPORT_SPL
+	select DM
+	select DM_THERMAL
+	select BOARD_EARLY_INIT_F
+
 config TARGET_MX6SLEVK
 	bool "mx6slevk"
 	select SUPPORT_SPL
@@ -428,6 +436,7 @@ source "board/kosagi/novena/Kconfig"
 source "board/samtec/vining_2000/Kconfig"
 source "board/liebherr/mccmon6/Kconfig"
 source "board/logicpd/imx6/Kconfig"
+source "board/lytx/mx6lytx/Kconfig"
 source "board/seco/Kconfig"
 source "board/solidrun/mx6cuboxi/Kconfig"
 source "board/technexion/pico-imx6ul/Kconfig"
