@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2012 Freescale Semiconductor, Inc.
+ * Copyright (C) 2017 Company, Inc.
  *
- * Author: Fabio Estevam <fabio.estevam@freescale.com>
+ * Author: Brett Phagan <b.phagan@nxp.com>
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -700,7 +700,7 @@ int board_late_init(void)
 #endif
 
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
-	setenv("board_name", "SABRESD");
+	setenv("board_name", "Projectname");
 
 	if (is_mx6dqp())
 		setenv("board_rev", "MX6QP");
@@ -715,7 +715,7 @@ int board_late_init(void)
 
 int checkboard(void)
 {
-	puts("Board: MX6-SabreSD\n");
+	puts("Board: Projectname\n");
 	return 0;
 }
 

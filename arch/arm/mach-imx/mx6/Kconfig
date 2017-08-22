@@ -218,6 +218,14 @@ config TARGET_MX6SABRESD
 	select DM_THERMAL
 	select BOARD_EARLY_INIT_F
 
+config TARGET_PROJECTNAME
+	bool "projectname"
+	select BOARD_LATE_INIT
+	select SUPPORT_SPL
+	select DM
+	select DM_THERMAL
+	select BOARD_EARLY_INIT_F
+
 config TARGET_MX6SLEVK
 	bool "mx6slevk"
 	select SUPPORT_SPL
@@ -395,6 +403,7 @@ endchoice
 config SYS_SOC
 	default "mx6"
 
+source "board/company/projectname/Kconfig
 source "board/ge/bx50v3/Kconfig"
 source "board/advantech/dms-ba16/Kconfig"
 source "board/aristainetos/Kconfig"

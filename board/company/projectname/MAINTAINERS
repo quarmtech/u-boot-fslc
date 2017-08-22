@@ -1,6 +1,6 @@
-MX6SABRESD BOARD
-M:	Fabio Estevam <fabio.estevam@nxp.com>
+PROJECTNAME BOARD
+M:	Brett Phagan <b.phagan@nxp.con>
 S:	Maintained
-F:	board/freescale/mx6sabresd/
-F:	include/configs/mx6sabresd.h
-F:	configs/mx6sabresd_defconfig
+F:	board/company/projectname/
+F:	include/configs/projectname.h
+F:	configs/projectname_defconfig

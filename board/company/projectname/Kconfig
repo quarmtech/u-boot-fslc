@@ -1,12 +1,12 @@
-if TARGET_MX6SABRESD
+if TARGET_PROJECTNAME
 
 config SYS_BOARD
-	default "mx6sabresd"
+	default "projectname"
 
 config SYS_VENDOR
-	default "freescale"
+	default "company"
 
 config SYS_CONFIG_NAME
-	default "mx6sabresd"
+	default "projectname"
 
 endif
