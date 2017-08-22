@@ -27,7 +27,7 @@
 #include <i2c.h>
 #include <power/pmic.h>
 #include <power/pfuze100_pmic.h>
-#include "../common/pfuze.h"
+#include "pfuze.h"
 #include <usb.h>
 
 DECLARE_GLOBAL_DATA_PTR;

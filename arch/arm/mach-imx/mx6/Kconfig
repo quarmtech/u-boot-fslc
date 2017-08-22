@@ -403,7 +403,7 @@ endchoice
 config SYS_SOC
 	default "mx6"
 
-source "board/company/projectname/Kconfig
+source "board/company/projectname/Kconfig"
 source "board/ge/bx50v3/Kconfig"
 source "board/advantech/dms-ba16/Kconfig"
 source "board/aristainetos/Kconfig"
