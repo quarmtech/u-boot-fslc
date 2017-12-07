@@ -54,4 +54,7 @@
 #define CONFIG_POWER_PFUZE100
 #define CONFIG_POWER_PFUZE100_I2C_ADDR	0x08
 
+/* Fuses */
+#define CONFIG_MXC_OCOTP
+
 #endif                         /* __MX6LYTX_CONFIG_H */

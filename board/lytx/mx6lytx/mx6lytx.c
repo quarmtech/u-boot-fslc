@@ -29,6 +29,7 @@
 #include <power/pfuze100_pmic.h>
 #include "pfuze.h"
 #include <usb.h>
+#include <fuse.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -54,13 +55,9 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define I2C_PAD MUX_PAD_CTRL(I2C_PAD_CTRL)
 
-/*
-#define DISP0_PWR_EN	IMX_GPIO_NR(1, 21)
-
-#define KEY_VOL_UP	IMX_GPIO_NR(1, 4)
-*/
 #define IMX6_ISL_RST IMX_GPIO_NR(3, 8)
 #define IMX6_ISL_PD	IMX_GPIO_NR(3, 8)
+#define IMX6_SD_PWR_EN IMX_GPIO_NR(2, 28)
 
 #define ANATOP_PLL_LOCK             	0x80000000
 #define ANATOP_PLL_PWDN_MASK        	0x00001000
@@ -128,40 +125,22 @@ static iomux_v3_cfg_t const enet_pads[] = {
 	/* AR8031 PHY Reset */
 	IOMUX_PADS(PAD_EIM_D16__GPIO3_IO16	| MUX_PAD_CTRL(NO_PAD_CTRL)),
 };
-/* Uncomment when adding wdog
+
 static iomux_v3_cfg_t const wdog_pads[] = {
 	IOMUX_PADS(PAD_SD1_DAT2__WDOG1_RESET_B_DEB | MUX_PAD_CTRL(NO_PAD_CTRL)),
 };
-*/
-
+static void setup_iomux_wdog(void)
+{
+	SETUP_IOMUX_PADS(wdog_pads);
+}
 static void setup_iomux_enet(void)
 {
 	SETUP_IOMUX_PADS(enet_pads);
 
 	/* Reset AR8031 PHY */
 	gpio_direction_output(IMX_GPIO_NR(3, 16) , 0);
-	#if 0
-	mdelay(10);
-	gpio_set_value(IMX_GPIO_NR(3, 16), 1);
-	#endif
 	udelay(100);
 }
-
-#if 0
-static iomux_v3_cfg_t const usdhc2_pads[] = {
-	IOMUX_PADS(PAD_SD2_CLK__SD2_CLK	| MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD2_CMD__SD2_CMD	| MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD2_DAT0__SD2_DATA0	| MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD2_DAT1__SD2_DATA1	| MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD2_DAT2__SD2_DATA2	| MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD2_DAT3__SD2_DATA3	| MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_NANDF_D4__SD2_DATA4	| MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_NANDF_D5__SD2_DATA5	| MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_NANDF_D6__SD2_DATA6	| MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_NANDF_D7__SD2_DATA7	| MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_NANDF_D2__GPIO2_IO02	| MUX_PAD_CTRL(NO_PAD_CTRL)), /* CD */
-};
-#endif
 
 static iomux_v3_cfg_t const usdhc3_pads[] = {
 	IOMUX_PADS(PAD_SD3_CLK__SD3_CLK   | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
@@ -176,106 +155,6 @@ static iomux_v3_cfg_t const usdhc3_pads[] = {
 	IOMUX_PADS(PAD_SD3_DAT7__SD3_DATA7 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
 };
 
-#if 0
-static iomux_v3_cfg_t const usdhc4_pads[] = {
-	IOMUX_PADS(PAD_SD4_CLK__SD4_CLK   | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD4_CMD__SD4_CMD   | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD4_DAT0__SD4_DATA0 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD4_DAT1__SD4_DATA1 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD4_DAT2__SD4_DATA2 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD4_DAT3__SD4_DATA3 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD4_DAT4__SD4_DATA4 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD4_DAT5__SD4_DATA5 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD4_DAT6__SD4_DATA6 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-	IOMUX_PADS(PAD_SD4_DAT7__SD4_DATA7 | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
-};
-
-static iomux_v3_cfg_t const ecspi1_pads[] = {
-	IOMUX_PADS(PAD_KEY_COL0__ECSPI1_SCLK | MUX_PAD_CTRL(SPI_PAD_CTRL)),
-	IOMUX_PADS(PAD_KEY_COL1__ECSPI1_MISO | MUX_PAD_CTRL(SPI_PAD_CTRL)),
-	IOMUX_PADS(PAD_KEY_ROW0__ECSPI1_MOSI | MUX_PAD_CTRL(SPI_PAD_CTRL)),
-	IOMUX_PADS(PAD_KEY_ROW1__GPIO4_IO09 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-};
-
-static iomux_v3_cfg_t const rgb_pads[] = {
-	IOMUX_PADS(PAD_DI0_DISP_CLK__IPU1_DI0_DISP_CLK | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DI0_PIN15__IPU1_DI0_PIN15 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DI0_PIN2__IPU1_DI0_PIN02 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DI0_PIN3__IPU1_DI0_PIN03 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DI0_PIN4__IPU1_DI0_PIN04 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT0__IPU1_DISP0_DATA00 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT1__IPU1_DISP0_DATA01 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT2__IPU1_DISP0_DATA02 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT3__IPU1_DISP0_DATA03 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT4__IPU1_DISP0_DATA04 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT5__IPU1_DISP0_DATA05 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT6__IPU1_DISP0_DATA06 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT7__IPU1_DISP0_DATA07 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT8__IPU1_DISP0_DATA08 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT9__IPU1_DISP0_DATA09 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT10__IPU1_DISP0_DATA10 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT11__IPU1_DISP0_DATA11 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT12__IPU1_DISP0_DATA12 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT13__IPU1_DISP0_DATA13 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT14__IPU1_DISP0_DATA14 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT15__IPU1_DISP0_DATA15 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT16__IPU1_DISP0_DATA16 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT17__IPU1_DISP0_DATA17 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT18__IPU1_DISP0_DATA18 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT19__IPU1_DISP0_DATA19 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT20__IPU1_DISP0_DATA20 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT21__IPU1_DISP0_DATA21 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT22__IPU1_DISP0_DATA22 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-	IOMUX_PADS(PAD_DISP0_DAT23__IPU1_DISP0_DATA23 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-};
-
-static iomux_v3_cfg_t const bl_pads[] = {
-	IOMUX_PADS(PAD_SD1_DAT3__GPIO1_IO21 | MUX_PAD_CTRL(NO_PAD_CTRL)),
-};
-
-static void enable_backlight(void)
-{
-	SETUP_IOMUX_PADS(bl_pads);
-	gpio_direction_output(DISP0_PWR_EN, 1);
-}
-
-static void enable_rgb(struct display_info_t const *dev)
-{
-	SETUP_IOMUX_PADS(rgb_pads);
-	enable_backlight();
-}
-
-static void enable_lvds(struct display_info_t const *dev)
-{
-	enable_backlight();
-}
-#endif
-
-
-
-#if 0
-static void setup_spi(void)
-{
-	SETUP_IOMUX_PADS(ecspi1_pads);
-}
-
-iomux_v3_cfg_t const pcie_pads[] = {
-	IOMUX_PADS(PAD_EIM_D19__GPIO3_IO19 | MUX_PAD_CTRL(NO_PAD_CTRL)),	/* POWER */
-	IOMUX_PADS(PAD_GPIO_17__GPIO7_IO12 | MUX_PAD_CTRL(NO_PAD_CTRL)),	/* RESET */
-};
-
-static void setup_pcie(void)
-{
-	SETUP_IOMUX_PADS(pcie_pads);
-}
-
-iomux_v3_cfg_t const di0_pads[] = {
-	IOMUX_PADS(PAD_DI0_DISP_CLK__IPU1_DI0_DISP_CLK),	/* DISP0_CLK */
-	IOMUX_PADS(PAD_DI0_PIN2__IPU1_DI0_PIN02),		/* DISP0_HSYNC */
-	IOMUX_PADS(PAD_DI0_PIN3__IPU1_DI0_PIN03),		/* DISP0_VSYNC */
-};
-#endif
-
 static void setup_iomux_uart(void)
 {
 	SETUP_IOMUX_PADS(uart3_pads);
@@ -285,21 +164,44 @@ static void setup_iomux_uart(void)
 struct fsl_esdhc_cfg usdhc_cfg[1] = {
 	{USDHC3_BASE_ADDR},
 };
-static iomux_v3_cfg_t const power_pads[] = {
+static iomux_v3_cfg_t const lcflex_power_pads[] = {
 	IOMUX_PADS(PAD_EIM_DA8__GPIO3_IO08 | MUX_PAD_CTRL(NO_PAD_CTRL)),
 	IOMUX_PADS(PAD_EIM_DA9__GPIO3_IO09 | MUX_PAD_CTRL(NO_PAD_CTRL)),
 };
-static void setup_iomux_power(void)
+static iomux_v3_cfg_t const tamarin_power_pads[] = {
+	IOMUX_PADS(PAD_EIM_EB0__GPIO2_IO28 | MUX_PAD_CTRL(NO_PAD_CTRL)), /* IMX6_SD_PWR_EN */
+};
+static void setup_iomux_power(int lytx_brd)
 {
-	SETUP_IOMUX_PADS(power_pads);
-	gpio_direction_output(IMX6_ISL_RST, 1);
-	gpio_direction_output(IMX6_ISL_PD, 1);
+	switch(lytx_brd){
+		case 0: /* SF1 */
+			SETUP_IOMUX_PADS(lcflex_power_pads);
+			gpio_direction_output(IMX6_ISL_RST, 1);
+			gpio_direction_output(IMX6_ISL_PD, 1);
+			break;
+		case 1: /* SF64 */
+			SETUP_IOMUX_PADS(lcflex_power_pads);
+			gpio_direction_output(IMX6_ISL_RST, 1);
+			gpio_direction_output(IMX6_ISL_PD, 1);
+			break;
+		case 2: /* AVM */
+			break;
+		case 3: /* DVM */
+			break;
+		case 4: /* Tamarin */
+			SETUP_IOMUX_PADS(tamarin_power_pads);
+			gpio_direction_output(IMX6_SD_PWR_EN, 1);
+			break;
+		case 5: /* Argus */
+			break;
+		case 6: /* ArgusMV */
+			break;
+		default: /* default */
+			break;
+	}
+
 }
 
-#if 0
-#define USDHC2_CD_GPIO	IMX_GPIO_NR(2, 2)
-#define USDHC3_CD_GPIO	IMX_GPIO_NR(2, 0)
-#endif
 
 int board_mmc_get_env_dev(int devno)
 {
@@ -322,39 +224,6 @@ int board_mmc_getcd(struct mmc *mmc)
 
 int board_mmc_init(bd_t *bis)
 {
-/*
-	#ifndef CONFIG_SPL_BUILD
-	int ret;
-	int i;
-	printf("Not using SPL Build\n");
-
-	/*
-	 * According to the board_mmc_init() the following map is done:
-	 * (U-Boot device node)    (Physical Port)
-	 * mmc0                    SD2
-	 * mmc1                    SD3
-	 * mmc2                    eMMC
-	 */
-	/*for (i = 0; i < CONFIG_SYS_FSL_USDHC_NUM; i++) {
-		switch (i) {
-		case 0:
-			SETUP_IOMUX_PADS(usdhc3_pads);
-			usdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC3_CLK);
-			break;
-		default:
-			printf("Warning: you configured more USDHC controllers"
-			       "(%d) then supported by the ?board (%d)\n",
-			       i + 1, CONFIG_SYS_FSL_USDHC_NUM);
-			return -EINVAL;
-		}
-
-		ret = fsl_esdhc_initialize(bis, &usdhc_cfg[i]);
-		if (ret)
-			return ret;
-	}
-
-	return 0;
-#else */
 	struct src *psrc = (struct src *)SRC_BASE_ADDR;
 	unsigned reg = readl(&psrc->sbmr1) >> 11;
 	/*
@@ -437,9 +306,52 @@ int board_eth_init(bd_t *bis)
 
 int board_early_init_f(void)
 {
+	#ifndef MFGTOOL_UBOOT
+		struct wdog_regs *wdog1 = (struct wdog_regs *)WDOG1_BASE_ADDR;
+		struct wdog_regs *wdog2 = (struct wdog_regs *)WDOG2_BASE_ADDR;
+		unsigned long wdog_timeout = 60;
+		char *wdog_timeout_str = getenv("wdogTimeout");
+
+					u16 val = readw(&wdog1->wcr);
+
+	#define IMX2_WDT_WCR_WT		(0xFF << 8)	/* -> Watchdog Timeout Field */
+	#define IMX2_WDT_WCR_WRE	(1 << 3)	/* -> WDOG Reset Enable */
+	#define IMX2_WDT_WCR_WDE	(1 << 2)	/* -> Watchdog Enable */
+	#define IMX2_WDT_WCR_WDZST	(1 << 0)	/* -> Watchdog timer Suspend */
+	#define WDOG_SEC_TO_COUNT(s)	((s * 2 - 1) << 8)
+
+					/* Get the watchdog timeout value from enviorment variable and validate it */
+		if(NULL != wdog_timeout_str)
+		{
+			wdog_timeout = simple_strtoul(wdog_timeout_str, NULL, 10);
+			if((wdog_timeout == 0) || (wdog_timeout > 127))
+			{
+				wdog_timeout = 60;
+			}
+		}
+		/* Suspend watch dog timer in low power mode, write once-only */
+		val |= IMX2_WDT_WCR_WDZST;
+		/* Strip the old watchdog Time-Out value */
+		val &= ~IMX2_WDT_WCR_WT;
+		/* Generate reset if WDOG times out */
+		val &= ~IMX2_WDT_WCR_WRE;
+		/* Keep Watchdog Disabled */
+		val &= ~IMX2_WDT_WCR_WDE;
+		/* Set the watchdog's Time-Out value */
+		val |= WDOG_SEC_TO_COUNT(wdog_timeout);
+
+		writew(val, &wdog1->wcr);
+
+		/* enable the watchdog */
+		val |= IMX2_WDT_WCR_WDE;
+		writew(val, &wdog1->wcr);
+	#endif
+
+
 	setup_iomux_uart();
-/* BBP Need to add WDOG*/
-	setup_iomux_power();
+	setup_iomux_wdog();
+
+
 	return 0;
 }
 
@@ -447,18 +359,6 @@ int board_init(void)
 {
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
-#if 0
-	if (is_mx6dq() || is_mx6dqp())
-	{
-		setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6q_i2c_pad_info1);
-		setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6q_i2c_pad_info3);
-	}
-	else
-	{
-		setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6dl_i2c_pad_info1);
-		setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6dl_i2c_pad_info3);
-	}
-#endif
 	return 0;
 }
 
@@ -505,39 +405,37 @@ static const struct boot_mode board_boot_modes[] = {
 
 int board_late_init(void)
 {
-	#if 0
 	static char dig_pot_reg_val_array[6]={0x64,0x5a,0x50,0x46,0x3c,0x32};
 	unsigned char read_val;
 	unsigned char write_val;
 	unsigned int loop_var;
-#endif
 
 	#ifdef CONFIG_CMD_BMODE
 	add_board_boot_modes(board_boot_modes);
 	#endif
-	/* BBP Copied code from Lytx */
-	#if 0
+
+	i2c_set_bus_num(0);
 	i2c_read(0x2f,5,1,&read_val,1);
 	write_val=0;
 	if(read_val>(dig_pot_reg_val_array[0]))
 	{
-		write_val=dig_pot_reg_val_array[0];
+		 write_val=dig_pot_reg_val_array[0];
 	}
 
 	if(write_val==0)
 	{
-		for(loop_var=0; ((loop_var < 5) && (write_val == 0));loop_var++)
-		{
-			if(read_val >= (dig_pot_reg_val_array[loop_var]+((dig_pot_reg_val_array[0]- dig_pot_reg_val_array[1])/2)))
-			{
-				write_val= dig_pot_reg_val_array[loop_var];
-			}
-		}
+		 for(loop_var=0; ((loop_var < 5) && (write_val == 0));loop_var++)
+		 {
+				 if(read_val >= (dig_pot_reg_val_array[loop_var]+((dig_pot_reg_val_array[0]- dig_pot_reg_val_array[1])/2)))
+				 {
+						write_val= dig_pot_reg_val_array[loop_var];
+				 }
+		 }
 
-		if(write_val == 0)
-		{
-			write_val = dig_pot_reg_val_array[5];
-		}
+		 if(write_val == 0)
+		 {
+				write_val = dig_pot_reg_val_array[5];
+		 }
 
 	}
 
@@ -550,26 +448,26 @@ int board_late_init(void)
 	fuse_prog(0, 5, 0x5060);
 	fuse_prog(0, 6, 0x10);
 
-	int val1;
-	int val2;
-	fuse_sense(0, 5, &val1);
-	fuse_sense(0, 6, &val2);
+	unsigned int val1;
+	unsigned int val2;
+	fuse_read(0, 5, &val1);
+	fuse_read(0, 6, &val2);
 	printf("OTP flashed !!\n");
 #else
-		#define WDOG_ENABLE_FUSE_MASK     0x200000
+{
+ #define WDOG_ENABLE_FUSE_MASK     0x200000
 
-		int fuse_val;
-		/* Burn fuse to enable the 90 sec serial downloader watchdog timer at
-		* boot if it hasn't yet been enabled. */
-		fuse_sense(0, 6, &fuse_val);
-		if ( (fuse_val & WDOG_ENABLE_FUSE_MASK) == 0 )
-		{
-			fuse_prog(0, 6, WDOG_ENABLE_FUSE_MASK);
-		}
+ unsigned int fuse_val;
+ /* Burn fuse to enable the 90 sec serial downloader watchdog timer at
+	* boot if it hasn't yet been enabled. */
+ fuse_read(0, 6, &fuse_val);
+ if ( (fuse_val & WDOG_ENABLE_FUSE_MASK) == 0 )
+ {
+		fuse_prog(0, 6, WDOG_ENABLE_FUSE_MASK);
+ }
+}
+#endif
 
-#endif
-#endif
-/* End of copy */
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 	setenv("board_name", "LYTX");
 
@@ -620,6 +518,8 @@ switch(lytx_brd){
 		break;
 
 }
+
+	setup_iomux_power(lytx_brd);
 
 	return 0;
 }
@@ -683,6 +583,18 @@ static struct i2c_pads_info mx6dl_i2c_pad_info3 = {
 		.gp = IMX_GPIO_NR(1, 6)
 	}
 };
+static void ccgr_init_ff(void)
+{
+	struct mxc_ccm_reg *ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
+
+	writel(0xFFFFFFFF, &ccm->CCGR0);
+	writel(0xFFFFFFFF, &ccm->CCGR1);
+	writel(0xFFFFFFFF, &ccm->CCGR2);
+	writel(0xFFFFFFFF, &ccm->CCGR3);
+	writel(0xFFFFFFFF, &ccm->CCGR4);
+	writel(0xFFFFFFFF, &ccm->CCGR5);
+	writel(0xFFFFFFFF, &ccm->CCGR6);
+}
 
 static void ccgr_init(void)
 {
@@ -713,8 +625,7 @@ static void gpr_init(void)
 		writel(0x007F007F, &iomux->gpr[7]);
 	}
 }
-
-static int avm_dcd_table[] = {
+static int drive48q_dcd_table[] = {
 	0x020e0798, 0x000C0000,
 	0x020e0758, 0x00000000,
 	0x020e0588, 0x00000028,
@@ -753,161 +664,8 @@ static int avm_dcd_table[] = {
 	0x020e0510, 0x00000028,
 	0x020e05bc, 0x00000028,
 	0x020e05c4, 0x00000028,
-	0x021b001c, 0x00008000,
-	0x021b0800, 0xa1390003,
-	0x021b080c, 0x0018001c,
-	0x021b0810, 0x0029001F,
-	0x021b480c, 0x000c001c,
-	0x021b4810, 0x00060016,
-	0x021b083c, 0x032c0334,
-	0x021b0840, 0x03200324,
-	0x021b483c, 0x03340344,
-	0x021b4840, 0x03200270,
-	0x021b0848, 0x3630302c,
-	0x021b4848, 0x2e2c2638,
-	0x021b0850, 0x3c38423e,
-	0x021b4850, 0x402e4a40,
-	0x021b081c, 0x33333333,
-	0x021b0820, 0x33333333,
-	0x021b0824, 0x33333333,
-	0x021b0828, 0x33333333,
-	0x021b481c, 0x33333333,
-	0x021b4820, 0x33333333,
-	0x021b4824, 0x33333333,
-	0x021b4828, 0x33333333,
-	0x021b08c0, 0x24911492,
-	0x021b48c0, 0x24911492,
-	0x021b08b8, 0x00000800,
-	0x021b48b8, 0x00000800,
-	0x021b0004, 0x00020036,
-	0x021b0008, 0x09444040,
-	0x021b000c, 0x3a3f78f5,
-	0x021b0010, 0xFF538F64,
-	0x021b0014, 0x01FF00DB,
-	0x021b0018, 0x00011740,
-	0x021b001c, 0x00008000,
-	0x021b002c, 0x000026d2,
-	0x021b0030, 0x003f1023,
-	0x021b0040, 0x00000017,
-	0x021b0000, 0x821A0000,
-	0x021b001c, 0x02088032,
-	0x021b001c, 0x00008033,
-	0x021b001c, 0x00048031,
-	0x021b001c, 0x19408030,
-	0x021b001c, 0x04008040,
-	0x021b0020, 0x00007800,
-	0x021b0818, 0x00022227,
-	0x021b4818, 0x00022227,
-	0x021b0004, 0x00025576,
-	0x021b0404, 0x00011006,
-	0x021b001c, 0x00000000,
 };
-
-static int mx6qp_dcd_table[] = {
-	0x020e0798, 0x000c0000,
-	0x020e0758, 0x00000000,
-	0x020e0588, 0x00000030,
-	0x020e0594, 0x00000030,
-	0x020e056c, 0x00000030,
-	0x020e0578, 0x00000030,
-	0x020e074c, 0x00000030,
-	0x020e057c, 0x00000030,
-	0x020e058c, 0x00000000,
-	0x020e059c, 0x00000030,
-	0x020e05a0, 0x00000030,
-	0x020e078c, 0x00000030,
-	0x020e0750, 0x00020000,
-	0x020e05a8, 0x00000030,
-	0x020e05b0, 0x00000030,
-	0x020e0524, 0x00000030,
-	0x020e051c, 0x00000030,
-	0x020e0518, 0x00000030,
-	0x020e050c, 0x00000030,
-	0x020e05b8, 0x00000030,
-	0x020e05c0, 0x00000030,
-	0x020e0774, 0x00020000,
-	0x020e0784, 0x00000030,
-	0x020e0788, 0x00000030,
-	0x020e0794, 0x00000030,
-	0x020e079c, 0x00000030,
-	0x020e07a0, 0x00000030,
-	0x020e07a4, 0x00000030,
-	0x020e07a8, 0x00000030,
-	0x020e0748, 0x00000030,
-	0x020e05ac, 0x00000030,
-	0x020e05b4, 0x00000030,
-	0x020e0528, 0x00000030,
-	0x020e0520, 0x00000030,
-	0x020e0514, 0x00000030,
-	0x020e0510, 0x00000030,
-	0x020e05bc, 0x00000030,
-	0x020e05c4, 0x00000030,
-	0x021b0800, 0xa1390003,
-	0x021b080c, 0x001b001e,
-	0x021b0810, 0x002e0029,
-	0x021b480c, 0x001b002a,
-	0x021b4810, 0x0019002c,
-	0x021b083c, 0x43240334,
-	0x021b0840, 0x0324031a,
-	0x021b483c, 0x43340344,
-	0x021b4840, 0x03280276,
-	0x021b0848, 0x44383A3E,
-	0x021b4848, 0x3C3C3846,
-	0x021b0850, 0x2e303230,
-	0x021b4850, 0x38283E34,
-	0x021b081c, 0x33333333,
-	0x021b0820, 0x33333333,
-	0x021b0824, 0x33333333,
-	0x021b0828, 0x33333333,
-	0x021b481c, 0x33333333,
-	0x021b4820, 0x33333333,
-	0x021b4824, 0x33333333,
-	0x021b4828, 0x33333333,
-	0x021b08c0, 0x24912249,
-	0x021b48c0, 0x24914289,
-	0x021b08b8, 0x00000800,
-	0x021b48b8, 0x00000800,
-	0x021b0004, 0x00020036,
-	0x021b0008, 0x24444040,
-	0x021b000c, 0x555A7955,
-	0x021b0010, 0xFF320F64,
-	0x021b0014, 0x01ff00db,
-	0x021b0018, 0x00001740,
-	0x021b001c, 0x00008000,
-	0x021b002c, 0x000026d2,
-	0x021b0030, 0x005A1023,
-	0x021b0040, 0x00000027,
-	0x021b0400, 0x14420000,
-	0x021b0000, 0x831A0000,
-	0x021b0890, 0x00400C58,
-	0x00bb0008, 0x00000000,
-	0x00bb000c, 0x2891E41A,
-	0x00bb0038, 0x00000564,
-	0x00bb0014, 0x00000040,
-	0x00bb0028, 0x00000020,
-	0x00bb002c, 0x00000020,
-	0x021b001c, 0x04088032,
-	0x021b001c, 0x00008033,
-	0x021b001c, 0x00048031,
-	0x021b001c, 0x09408030,
-	0x021b001c, 0x04008040,
-	0x021b0020, 0x00005800,
-	0x021b0818, 0x00011117,
-	0x021b4818, 0x00011117,
-	0x021b0004, 0x00025576,
-	0x021b0404, 0x00011006,
-	0x021b001c, 0x00000000,
-};
-
-static int sf1_dcd_table[] = {
-	//0x020c4068, 0xffffffff,
-	//0x020c406c, 0xffffffff,
-	//0x020c4070, 0xffffffff,
-	//0x020c4074, 0xffffffff,
-	//0x020c4078, 0xffffffff,
-	//0x020c407c, 0xffffffff,
-	//0x020c4080, 0xffffffff,
-	//0x020c4084, 0xffffffff,
+static int drive48dl_dcd_table[] = {
 	0x020e0774, 0x000C0000,
 	0x020e0754, 0x00000000,
 	0x020e04ac, 0x00000028,
@@ -946,6 +704,111 @@ static int sf1_dcd_table[] = {
 	0x020e0484, 0x00000028,
 	0x020e0488, 0x00000028,
 	0x020e048c, 0x00000028,
+};
+
+static int avm_dcd_table[] = {
+	0x020e0588, 0x00000010,
+	0x020e0594, 0x00000010,
+	0x021b001c, 0x00008000,
+	0x021b0800, 0xa1390003,
+	0x021b080c, 0x001f001e,
+	0x021b0810, 0x0029001e,
+	0x021b480c, 0x000c001c,
+	0x021b4810, 0x00060016,
+	0x021b083c, 0x031c0328,
+	0x021b0840, 0x03180318,
+	0x021b483c, 0x03340344,
+	0x021b4840, 0x03200270,
+	0x021b0848, 0x38323836,
+	0x021b4848, 0x2e2c2638,
+	0x021b0850, 0x3c3c423e,
+	0x021b4850, 0x402e4a40,
+	0x021b081c, 0x33333333,
+	0x021b0820, 0x33333333,
+	0x021b0824, 0x33333333,
+	0x021b0828, 0x33333333,
+	0x021b481c, 0x33333333,
+	0x021b4820, 0x33333333,
+	0x021b4824, 0x33333333,
+	0x021b4828, 0x33333333,
+	0x021b08c0, 0x24911492,
+	0x021b48c0, 0x24911492,
+	0x021b08b8, 0x00000800,
+	0x021b48b8, 0x00000800,
+	0x021b0004, 0x00020036,
+	0x021b0008, 0x09444040,
+	0x021b000c, 0x545978f5,
+	0x021b0010, 0xFF538F64,
+	0x021b0014, 0x01FF00DB,
+	0x021b0018, 0x00011740,
+	0x021b001c, 0x00008000,
+	0x021b002c, 0x000026d2,
+	0x021b0030, 0x00591023,
+	0x021b0040, 0x00000017,
+	0x021b0000, 0x83190000,
+	0x021b001c, 0x02088032,
+	0x021b001c, 0x00008033,
+	0x021b001c, 0x00048031,
+	0x021b001c, 0x19408030,
+	0x021b001c, 0x04008040,
+	0x021b0020, 0x00007800,
+	0x021b0818, 0x00022227,
+	0x021b4818, 0x00022227,
+	0x021b0004, 0x00025576,
+	0x021b0404, 0x00011006,
+	0x021b001c, 0x00000000,
+};
+
+static int tamarin_dcd_table[] = {
+	0x021b001c, 0x00008000,
+	0x021b0800, 0xa1390003,
+	0x021b080c, 0x001f001f,
+	0x021b0810, 0x001f001f,
+	0x021b480c, 0x001f001f,
+	0x021b4810, 0x001f001f,
+	0x021b083c, 0x422c022c,
+	0x021b0840, 0x0207017e,
+	0x021b483c, 0x4201020c,
+	0x021b4840, 0x01660172,
+	0x021b0848, 0x484a4e4c,
+	0x021b4848, 0x40404040,
+	0x021b0850, 0x3a363432,
+	0x021b4850, 0x40404040,
+	0x021b081c, 0x33333333,
+	0x021b0820, 0x33333333,
+	0x021b0824, 0x33333333,
+	0x021b0828, 0x33333333,
+	0x021b481c, 0x33333333,
+	0x021b4820, 0x33333333,
+	0x021b4824, 0x33333333,
+	0x021b4828, 0x33333333,
+	0x021b08b8, 0x00000800,
+	0x021b48b8, 0x00000800,
+	0x021b0004, 0x0002002d,
+	0x021b0008, 0x00333040,
+	0x021b000c, 0x3f435313,
+	0x021b0010, 0xb66e8b63,
+	0x021b0014, 0x01FF00DB,
+	0x021b0018, 0x00011740,
+	0x021b001c, 0x00008000,
+	0x021b002c, 0x000026d2,
+	0x021b0030, 0x00431023,
+	0x021b0040, 0x00000017,
+	0x021b0000, 0x83190000,
+	0x021b001c, 0x02808032,
+	0x021b001c, 0x00008033,
+	0x021b001c, 0x00048031,
+	0x021b001c, 0x15208030,
+	0x021b001c, 0x04008040,
+	0x021b0020, 0x00007800,
+	0x021b0818, 0x00022227,
+	0x021b4818, 0x00022227,
+	0x021b0004, 0x0002556d,
+	0x021b0404, 0x00011006,
+	0x021b001c, 0x00000000,
+};
+
+static int sf1_dcd_table[] = {
 	0x021b001c, 0x00008000,
 	0x021b0800, 0xA1390003,
 	0x021b080c, 0x001F001F,
@@ -993,7 +856,6 @@ static int sf1_dcd_table[] = {
 	0x021b0004, 0x0002556D,
 	0x021b0404, 0x00011006,
 	0x021b001c, 0x00000000,
-
 };
 
 static void ddr_init(int *table, int size)
@@ -1004,31 +866,47 @@ static void ddr_init(int *table, int size)
 		writel(table[2 * i + 1], table[2 * i]);
 }
 
+static void drive_init(int *table, int size)
+{
+	int i;
+
+	for (i = 0; i < size / 2 ; i++)
+		writel(table[2 * i + 1], table[2 * i]);
+}
+
 static void spl_dram_init(int ddr_rev)
 {
 	switch(ddr_rev){
-		case 0:
+		case 0: /* SF1 */
+			drive_init(drive48dl_dcd_table, ARRAY_SIZE(drive48dl_dcd_table));
 			ddr_init(sf1_dcd_table, ARRAY_SIZE(sf1_dcd_table));
 			break;
-		case 1:
+		case 1: /* SF64 */
+			drive_init(drive48dl_dcd_table, ARRAY_SIZE(drive48dl_dcd_table));
 			ddr_init(sf1_dcd_table, ARRAY_SIZE(sf1_dcd_table));
 			break;
-		case 2:
+		case 2: /* AVM */
+			drive_init(drive48q_dcd_table, ARRAY_SIZE(drive48q_dcd_table));
 			ddr_init(avm_dcd_table, ARRAY_SIZE(avm_dcd_table));
 			break;
-		case 3:
+		case 3: /* Place holder for DVM */
+			drive_init(drive48dl_dcd_table, ARRAY_SIZE(drive48dl_dcd_table));
 			ddr_init(sf1_dcd_table, ARRAY_SIZE(sf1_dcd_table));
 			break;
-		case 4:
+		case 4: /* Tamarin */
+			drive_init(drive48dl_dcd_table, ARRAY_SIZE(drive48dl_dcd_table));
+			ddr_init(tamarin_dcd_table, ARRAY_SIZE(tamarin_dcd_table));
+			break;
+		case 5: /* Place holder for Argus */
+			drive_init(drive48dl_dcd_table, ARRAY_SIZE(drive48dl_dcd_table));
 			ddr_init(sf1_dcd_table, ARRAY_SIZE(sf1_dcd_table));
 			break;
-		case 5:
-			ddr_init(sf1_dcd_table, ARRAY_SIZE(sf1_dcd_table));
-			break;
-		case 6:
+		case 6: /* Place holder for ArgusMV */
+			drive_init(drive48dl_dcd_table, ARRAY_SIZE(drive48dl_dcd_table));
 			ddr_init(sf1_dcd_table, ARRAY_SIZE(sf1_dcd_table));
 			break;
 		default:
+			drive_init(drive48dl_dcd_table, ARRAY_SIZE(drive48dl_dcd_table));
 			ddr_init(sf1_dcd_table, ARRAY_SIZE(sf1_dcd_table));
 			break;
 
@@ -1042,7 +920,7 @@ void board_init_f(ulong dummy)
 	/* setup AIPS and disable watchdog */
 	arch_cpu_init();
 
-	ccgr_init();
+	ccgr_init_ff();
 	gpr_init();
 
 	/* iomux and setup of i2c */
@@ -1050,7 +928,7 @@ void board_init_f(ulong dummy)
 
 	/* setup GP timer */
 	timer_init();
-
+	/* Setup I2C to read eeprom for */
 	if (is_mx6dq() || is_mx6dqp())
 	{
 		setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6q_i2c_pad_info1);
@@ -1065,6 +943,7 @@ void board_init_f(ulong dummy)
 	int lbrd;
 	i2c_set_bus_num(2);
 	lbrd = i2c_reg_read(0x53, 14);
+
 
 	/* DDR initialization */
 	spl_dram_init(lbrd);

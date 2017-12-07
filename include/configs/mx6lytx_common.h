@@ -64,118 +64,7 @@
 #define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 
 #define CONFIG_PREBOOT ""
-#if 0
-#define CONFIG_EXTRA_ENV_SETTINGS \
-	"script=boot.scr\0" \
-	"image=uimage\0" \
-	"fdt_file=undefined\0" \
-	"fdt_addr=0x18000000\0" \
-	"boot_fdt=try\0" \
-	"ip_dyn=yes\0" \
-	"console=" CONSOLE_DEV "\0" \
-	"dfuspi=dfu 0 sf 0:0:10000000:0\0" \
-	"dfu_alt_info_spl=spl raw 0x400\0" \
-	"dfu_alt_info_img=u-boot raw 0x10000\0" \
-	"dfu_alt_info=spl raw 0x400\0" \
-	"fdt_high=0xffffffff\0"	  \
-	"initrd_high=0xffffffff\0" \
-	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
-	"mmcpart=1\0" \
-	"finduuid=part uuid mmc ${mmcdev}:2 uuid\0" \
-	"update_sd_firmware=" \
-		"if test ${ip_dyn} = yes; then " \
-			"setenv get_cmd dhcp; " \
-		"else " \
-			"setenv get_cmd tftp; " \
-		"fi; " \
-		"if mmc dev ${mmcdev}; then "	\
-			"if ${get_cmd} ${update_sd_firmware_filename}; then " \
-				"setexpr fw_sz ${filesize} / 0x200; " \
-				"setexpr fw_sz ${fw_sz} + 1; "	\
-				"mmc write ${loadaddr} 0x2 ${fw_sz}; " \
-			"fi; "	\
-		"fi\0" \
-	EMMC_ENV	  \
-	"mmcargs=setenv bootargs console=${console},${baudrate} " \
-		"root=PARTUUID=${uuid} rootwait rw\0" \
-	"loadbootscript=" \
-		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
-	"bootscript=echo Running bootscript from mmc ...; " \
-		"source\0" \
-	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
-	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
-	"mmcboot=echo Booting from mmc ...; " \
-		"run finduuid; " \
-		"run mmcargs; " \
-		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
-			"if run loadfdt; then " \
-				"bootm ${loadaddr} - ${fdt_addr}; " \
-			"else " \
-				"if test ${boot_fdt} = try; then " \
-					"bootm; " \
-				"else " \
-					"echo WARN: Cannot load the DT; " \
-				"fi; " \
-			"fi; " \
-		"else " \
-			"bootm; " \
-		"fi;\0" \
-	"netargs=setenv bootargs console=${console},${baudrate} " \
-		"root=/dev/nfs " \
-		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
-	"netboot=echo Booting from net ...; " \
-		"run netargs; " \
-		"if test ${ip_dyn} = yes; then " \
-			"setenv get_cmd dhcp; " \
-		"else " \
-			"setenv get_cmd tftp; " \
-		"fi; " \
-		"${get_cmd} ${image}; " \
-		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
-			"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
-				"bootz ${loadaddr} - ${fdt_addr}; " \
-			"else " \
-				"if test ${boot_fdt} = try; then " \
-					"bootz; " \
-				"else " \
-					"echo WARN: Cannot load the DT; " \
-				"fi; " \
-			"fi; " \
-		"else " \
-			"bootz; " \
-		"fi;\0" \
-		"findfdt="\
-			"if test $fdt_file = undefined; then " \
-				"if test $board_name = SABREAUTO && test $board_rev = MX6QP; then " \
-					"setenv fdt_file imx6qp-sabreauto.dtb; fi; " \
-				"if test $board_name = SABREAUTO && test $board_rev = MX6Q; then " \
-					"setenv fdt_file imx6q-sabreauto.dtb; fi; " \
-				"if test $board_name = SABREAUTO && test $board_rev = MX6DL; then " \
-					"setenv fdt_file imx6dl-sabreauto.dtb; fi; " \
-				"if test $board_name = LYTX && test $board_rev = MX6QP; then " \
-					"setenv fdt_file imx6qp-sabresd.dtb; fi; " \
-				"if test $board_name = LYTX && test $board_rev = MX6Q; then " \
-					"setenv fdt_file avm.dtb; fi; " \
-				"if test $board_name = LYTX && test $board_rev = MX6DL; then " \
-					"setenv fdt_file lcflex.dtb; fi; " \
-				"if test $fdt_file = undefined; then " \
-					"echo WARNING: Could not determine dtb to use; fi; " \
-			"fi;\0" \
 
-#define CONFIG_BOOTCOMMAND \
-	"run findfdt;" \
-	"mmc dev ${mmcdev};" \
-	"if mmc rescan; then " \
-		"if run loadbootscript; then " \
-		"run bootscript; " \
-		"else " \
-			"if run loadimage; then " \
-				"run mmcboot; " \
-			"else run netboot; " \
-			"fi; " \
-		"fi; " \
-	"else run netboot; fi"
-#endif
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"DEFAULT_CS=1\0" \
         "DEFAULT_KERNEL=1\0" \
@@ -185,18 +74,18 @@
         "boot_counter=0 \0" \
         "boot_fdt=no\0" \
         "bootargs=console=ttymxc2,115200 root=/dev/mmcblk0p3 rootwait rw \0" \
-        "bootcmd=run finddtb; run check_test_cs; run load_kernel; run load_dtb; run setbootargs; run check_for_first_boot; run do_boot \0" \
+        "bootcmd=run findtest; run check_test_cs; run load_kernel; run load_dtb; run setbootargs; run check_for_first_boot; run do_boot \0" \
         "bootdelay=3\0" \
 	"first_boot_check=0\0" \
 	"test_cs=undefined\0" \
 	"check_for_first_boot=if test ${first_boot_check} = 0; then setenv first_boot_check 1; saveenv; fi\0" \
-	"check_test_cs=if test ${test_cs} =lcflex; then run check_cs; fi\0" \
+	"check_test_cs=if test ${test_cs} = yes; then run check_cs; fi\0" \
 	"check_cs=if test ${kernel} = 1; then run test_cs1; else run test_cs2; fi\0" \
 	"cs=1\0" \
         "default1=setexpr boot_counter ${boot_counter} + 1; saveenv\0" \
         "do_boot=bootm ${kernel_address} - ${dtb_address}\0" \
 	"dtb_address=0x18000000\0" \
-	"dtb_file=undefined\0" \
+	"dtb_file=lcflex.dtb\0" \
 	"ethact=FEC\0" \
 	"ethprime=FEC\0" \
         "kernel1=1\0" \
@@ -226,24 +115,22 @@
         "cs1_status=GOOD\0" \
         "cs2_status=GOOD\0" \
         "wdogTimeout=61\0" \
-	"finddtb="\
-		"if test $fdtb_file = undefined; then " \
+	"findtest="\
+		"if test $test_cs = undefined; then " \
 			"if test $board_name = LYTX && test $lytx_rev = SF1; then " \
-				"setenv dtb_file lcflex.dtb; setenv test_cs lcflex; fi; " \
+				"setenv test_cs yes; fi; " \
 			"if test $board_name = LYTX && test $lytx_rev = SF64; then " \
-				"setenv dtb_file imx6q-sabreauto.dtb; fi; " \
+				"setenv test_cs yes; fi; " \
 			"if test $board_name = LYTX && test $lytx_rev = AVM; then " \
-				"setenv dtb_file avm.dtb; setenv test_cs avm; fi; " \
+				"setenv test_cs avm; fi; " \
 			"if test $board_name = LYTX && test $lytx_rev = DVM; then " \
-				"setenv dtb_file imx6qp-sabresd.dtb; fi; " \
+				"fi; " \
 			"if test $board_name = LYTX && test $lytx_rev = Tamarin; then " \
-				"setenv dtb_file avm.dtb; setenv test_cs avm; fi; " \
+				"setenv test_cs yes; fi; " \
 			"if test $board_name = LYTX && test $lytx_rev = Argus; then " \
-				"setenv dtb_file lcflex.dtb; setenv test_cs lcflex; fi; " \
-				"if test $board_name = LYTX && test $lytx_rev = ArgusMV; then " \
-					"setenv dtb_file lcflex.dtb; setenv test_cs lcflex; fi; " \
-			"if test $dtb_file = undefined; then " \
-				"echo WARNING: Could not determine dtb to use; fi; " \
+				"fi; " \
+			"if test $board_name = LYTX && test $lytx_rev = ArgusMV; then " \
+				"fi; " \
 		"fi;\0" \
 
 #define CONFIG_BOOTCOMMAND \
@@ -275,7 +162,10 @@
 #define CONFIG_ENV_IS_IN_MMC
 
 #if defined(CONFIG_ENV_IS_IN_MMC)
+#define CONFIG_ENV_OFFSET		(6 * 64 * 1024)
+/*
 #define CONFIG_ENV_OFFSET		(768 * 1024)
+*/
 #endif
 
 #ifdef CONFIG_MX6DL
